@@ -1,0 +1,47 @@
+{
+  "network_info": {
+        "changed": false,
+        "exists": true,
+        "failed": false,
+        "network": {
+            "Attachable": false,
+            "ConfigFrom": {
+                "Network": ""
+            },
+            "ConfigOnly": false,
+            "Containers": {},
+            "Created": "2026-01-24T14:46:41.784471443+02:00",
+            "Driver": "bridge",
+            "EnableIPv4": true,
+            "EnableIPv6": false,
+            "IPAM": {
+                "Config": [
+                    {
+                        "Gateway": "172.18.0.1",
+                        "IPRange": "",
+                        "Subnet": "172.18.0.0/16"
+                    }
+                ],
+                "Driver": "default",
+                "Options": null
+            },
+            "Id": "b1659d6189663c876b6d9928ae5745ba40d5b2ea4e61ba125f28b5b217 9afffb",
+            "Ingress": false,
+            "Internal": false,
+            "Labels": {},
+            "Name": "nextcloud_network",
+            "Options": {},
+            "Scope": "local",
+            "Status": {
+                "IPAM": {
+                    "Subnets": {
+                        "172.18.0.0/16": {
+                            "DynamicIPsAvailable": 65533,
+                            "IPsInUse": 3
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

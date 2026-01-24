@@ -1,0 +1,14 @@
+# - name: Установка зависимостей для докера
+#   import_tasks: install_docker_deps.yml
+
+- name: Создание директорий
+  import_tasks: create_directories.yml
+
+- name: Генерация .env
+  import_tasks: generate_env.yml
+
+- name: Деплой контейнеров
+  import_tasks: deploy_containers.yml
+
+- name: Проверка состояния контейнеров
+  import_tasks: check_health.yml

@@ -1,0 +1,6 @@
+- hosts: nextcloud
+  become: false
+  # vars_files:
+  #   - roles/nextcloud_stack/vars/secrets.yml
+  roles:
+    - nextcloud_stack

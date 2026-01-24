@@ -1,0 +1,27 @@
+---
+- name: State docker network
+  community.docker.docker_network:
+    name: nextcloud_network
+    state: present
+
+- name: Get docker network info
+  community.docker.docker_network_info:
+    name: nextcloud_network
+  register: network_info
+
+- name: Set var nextcloud_subnet
+  set_fact:
+    nextcloud_subnet: "{{ network_info.network.IPAM.Config[0].Subnet }}"
+
+# - name: DEBUG network_info
+#   debug:
+#     var: network_info
+
+- name: Create .env from .env.j2
+  template:
+    src: .env.j2
+    dest: "{{ project_root }}/.env"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+

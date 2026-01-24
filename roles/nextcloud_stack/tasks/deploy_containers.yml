@@ -1,0 +1,8 @@
+---
+- name: Run nextcloud_stack
+  community.docker.docker_compose_v2:
+    env_file: "{{ project_root }}/.env"
+    project_src: "{{ project_root }}"
+    pull: missing
+    state: present
+    # restarted: always

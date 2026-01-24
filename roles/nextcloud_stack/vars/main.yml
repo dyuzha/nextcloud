@@ -1,0 +1,14 @@
+db_root_password: "rootpassword123"
+db_password: "nextcloudpass"
+nextcloud_admin_user: "admin"
+nextcloud_admin_password: "adminpass"
+trusted_domains: "localhost nextcloud.dyuzha.ru"
+domain: "nextcloud.dyuzha.ru"
+
+mariadb_image: "docker.io/library/mariadb:12.0.2"
+redis_image: "redis:8.4.0"
+nextcloud_image: "docker.io/library/nextcloud:32.0.5"
+onlyoffice_image: "onlyoffice/documentserver:9.2.1.1"
+nginx_image: "nginx:1.29.4"
+haproxy_image: "haproxy:2.9"
+project_root: /opt/nextcloud

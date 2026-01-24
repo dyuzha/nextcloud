@@ -1,0 +1,68 @@
+---
+- name: Создать директории для Nextcloud
+  file:
+    path: "{{ project_root }}/{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(ansible_user) }}"
+    group: "{{ item.group | default(ansible_user) }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop:
+    - { path: mariadb }
+    - { path: redis }
+    - { path: nextcloud/html }
+    - { path: nextcloud/data }
+    - { path: nextcloud/config }
+    - { path: onlyoffice/logs }
+    - { path: onlyoffice/data }
+    - { path: onlyoffice/lib }
+    - { path: nginx/html }
+    - { path: nginx/templates }
+    - { path: certs }
+    - { path: haproxy }
+
+
+
+- name: Copy docker-compose.yml
+  ansible.builtin.copy:
+    src: docker-compose.yml
+    dest: "{{ project_root }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+
+- name: Скопировать базовый nginx.conf
+  template:
+    src: nginx.conf.j2
+    dest: "{{project_root}}/nginx/nginx.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+
+- name: Copy template Nextcloud for nginx
+  template:
+    src: nextcloud.conf.j2
+    dest: "{{project_root}}/nginx/templates/nextcloud.conf"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+
+- name: Скопировать базовый конфиг haproxy
+  template:
+    src: haproxy.cfg.j2
+    dest: "{{project_root}}/haproxy/haproxy.cfg"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+#
+#
+# - name: Создать базовый конфиг для MariaDB
+#   template:
+#     src: my.cnf.j2
+#     dest: "{{project_root}}/mariadb/my.cnf"
+#     owner: "{{ ansible_user }}"
+#     group: "{{ ansible_user }}"
+#     mode: "0644"
+#   when: create_mysql_config | default(true)
