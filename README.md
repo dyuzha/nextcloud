@@ -43,7 +43,8 @@ export ANSIBLE_ROLES_PATH=./roles
 ansible-playbook -i ./inventories/prod.yml ./playbooks/nextcloud.yml
 
 ansible-playbook -i ./inventories/prod.yml ./playbooks/nextcloud.yml --start-at-task="State docker network"
-Create .env from .env.j2
+
+docker compose run --rm nextcloud-db sh -c "rm -f /var/lib/mysql/tc.log"
 ```
 
 

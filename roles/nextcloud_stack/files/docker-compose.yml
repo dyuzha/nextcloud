@@ -14,14 +14,14 @@ services:
     networks:
         - nextcloud_network
 
-    healthcheck:
-      test: ["CMD", "pgrep", "mysqld"]
+    # healthcheck:
+    #   test: ["CMD", "pgrep", "mysqld"]
       # test: >
       #   sh -c "mariadb --user=${MYSQL_USER} --password=${MYSQL_PASSWORD} \
       #   --host=localhost -e 'SELECT 1;' ${MYSQL_DATABASE}"
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      # interval: 10s
+      # timeout: 5s
+      # retries: 5
 
 
   nextcloud-redis:
@@ -42,9 +42,6 @@ services:
     image: ${NEXTCLOUD_IMAGE}
     container_name: nextcloud-app
     restart: unless-stopped
-    ports:
-      - "443:443"
-      - "8080:80"
     environment:
       - NEXTCLOUD_TRUSTED_DOMAINS=${TRUSTED_DOMAINS}
       - MYSQL_HOST=nextcloud-db
@@ -64,8 +61,6 @@ services:
     depends_on:
       nextcloud-redis:
         condition: service_healthy
-      nextcloud-db:
-        condition: service_healthy
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/status.php"]
@@ -83,9 +78,10 @@ services:
     restart: unless-stopped
     # ports:
     #   - "8081:80"
+    #   - "1233:443"
     environment:
-      - JWT_ENABLED=false
-      # - JWT_SECRET=${JWT_SECRET}
+      - JWT_ENABLED=true
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./onlyoffice/logs:/var/log/onlyoffice
       - ./onlyoffice/data:/var/www/onlyoffice/Data
@@ -111,8 +107,8 @@ services:
     volumes:
       # Конфигурационные файлы Nginx
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/templates:/etc/nginx/templates:ro
-      - ./certs:/etc/letsencrypt/live:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt/live:/etc/letsencrypt/live:ro
       # Статичные файлы для HTTP challenge (для получения сертификатов)
       - ./nginx/html:/usr/share/nginx/html:ro
     environment:
@@ -125,21 +121,40 @@ services:
     networks:
       - nextcloud_network
 
-  haproxy:
-    image: ${HAPROXY_IMAGE}
-    container_name: nextcloud-haproxy
+
+  harp:
+    # build:
+    #   context: ./
+    #   dockerfile: Dockerfile
+    image: "harp:${HARP_VERSION}"
+    container_name: nextcloud-harp
     restart: unless-stopped
+
+    environment:
+      HP_SHARED_KEY: "${HP_SHARED_KEY}"
+      HP_LOG_LEVEL: "${HP_LOG_LEVEL:-info}"
+
+      # Где слушает HaRP
+      HP_EXAPPS_ADDRESS: "${HP_EXAPPS_ADDRESS:-0.0.0.0:8780}"
+      HP_EXAPPS_HTTPS_ADDRESS: "${HP_EXAPPS_HTTPS_ADDRESS:-0.0.0.0:8781}"
+      HP_FRP_ADDRESS: "${HP_FRP_ADDRESS:-0.0.0.0:8782}"
+
+      # Адрес Nextcloud (внутренний)
+      NC_INSTANCE_URL: "${NC_INSTANCE_URL:-http://nextcloud}"
+
+      # Сеть докера
+      HP_TRUSTED_PROXY_IPS: "${TRUSTED_PROXIES}"
+
+    ports:
+      - "8780:8780"
+      - "8781:8781"
+      - "8782:8782"
+
     volumes:
-      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
     networks:
       - nextcloud_network
-
-    healthcheck:
-      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
 
 networks:
   nextcloud_network:

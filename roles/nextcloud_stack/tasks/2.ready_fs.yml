@@ -1,5 +1,5 @@
 ---
-- name: Создать директории для Nextcloud
+- name: 2.1 Create directorys
   file:
     path: "{{ project_root }}/{{ item.path }}"
     state: directory
@@ -9,20 +9,18 @@
   loop:
     - { path: mariadb }
     - { path: redis }
-    - { path: nextcloud/html }
-    - { path: nextcloud/data }
-    - { path: nextcloud/config }
+    - { path: nextcloud/html, owner: "33", group: "33", mode: "0750" }
+    - { path: nextcloud/data, owner: "33", group: "33", mode: "0750" }
+    - { path: nextcloud/config, owner: "33", group: "33", mode: "0750" }
     - { path: onlyoffice/logs }
     - { path: onlyoffice/data }
     - { path: onlyoffice/lib }
-    - { path: nginx/html }
-    - { path: nginx/templates }
-    - { path: certs }
-    - { path: haproxy }
+    - { path: nginx/html, owner: '101', group: '101', mode: '0755' }
+    - { path: nginx/conf.d, owner: '101', group: '101', mode: '0644' }
+    - { path: harp }
 
 
-
-- name: Copy docker-compose.yml
+- name: 2.2 Copy docker-compose.yml
   ansible.builtin.copy:
     src: docker-compose.yml
     dest: "{{ project_root }}/docker-compose.yml"
@@ -31,7 +29,7 @@
     mode: "0644"
 
 
-- name: Скопировать базовый nginx.conf
+- name: 2.3 Copy nginx.conf
   template:
     src: nginx.conf.j2
     dest: "{{project_root}}/nginx/nginx.conf"
@@ -40,24 +38,25 @@
     mode: "0644"
 
 
-- name: Copy template Nextcloud for nginx
+- name: 2.4 Copy template Nextcloud for nginx
   template:
     src: nextcloud.conf.j2
-    dest: "{{project_root}}/nginx/templates/nextcloud.conf"
+    dest: "{{project_root}}/nginx/conf.d/nextcloud.conf"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: "0644"
 
 
-- name: Скопировать базовый конфиг haproxy
-  template:
-    src: haproxy.cfg.j2
-    dest: "{{project_root}}/haproxy/haproxy.cfg"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: "0644"
-#
-#
+
+# - name: Copy template haproxy
+#   template:
+#     src: haproxy.cfg.j2
+#     dest: "{{project_root}}/haproxy/haproxy.cfg"
+#     owner: "{{ ansible_user }}"
+#     group: "{{ ansible_user }}"
+#     mode: "0644"
+
+
 # - name: Создать базовый конфиг для MariaDB
 #   template:
 #     src: my.cnf.j2

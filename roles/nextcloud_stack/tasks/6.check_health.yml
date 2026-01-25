@@ -1,0 +1,27 @@
+---
+- name: 6.1 Check health containers
+  community.docker.docker_container_info:
+    name: "{{ item }}"
+  loop:
+    - nextcloud-mariadb
+    - nextcloud-redis
+    - nextcloud-app
+    - onlyoffice-documentserver
+    - nginx-proxy
+    - nextcloud-harp
+  register: container_info
+
+
+# - name: 6.2 Show status containers
+#   debug:
+#     msg: "{{ item.Name }}: {{ item.State.Status }}, Health: {{ item.State.Health.Status | default('unknown') }}"
+#   loop: "{{ container_info.results | map(attribute='containers') | list | flatten }}"
+#
+# - name: 6.2 Show status containers
+#   debug:
+#     msg: >-
+#       {{ item.container.Name }}:
+#       {{ item.container.State.Status }},
+#       Health: {{ item.container.State.Health.Status | default('unknown') }}
+#   loop: "{{ container_info.results }}"
+#   when: item.container is defined

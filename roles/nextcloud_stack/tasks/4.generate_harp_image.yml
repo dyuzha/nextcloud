@@ -1,0 +1,46 @@
+---
+- name: 4.1 Clone Harp repository
+  ansible.builtin.git:
+    repo: "https://github.com/nextcloud/HaRP.git"
+    dest: "{{ project_root }}/harp"
+    version: "{{ harp_version }}"
+    # depth: 5
+    clone: yes
+    update: no
+
+
+# - name: 4.2 Build Harp Docker image
+#   community.docker.docker_image:
+#     build:
+#       path: "{{ project_root }}/harp"
+#     name: "harp"
+#     tag: "{{ harp_version }}"
+#     source: build
+#     force_source: no
+#   environment:
+#     DOCKER_BUILDKIT: "1"
+#   register: build_result
+
+
+- name: 4.2 Check if harp image exists
+  ansible.builtin.command: >
+    docker image inspect harp:{{ harp_version }}
+  register: harp_image_check
+  failed_when: false
+  changed_when: false
+
+
+- name: 4.3 Build Harp Docker image with buildx
+  ansible.builtin.command: >
+    docker buildx build
+    --load
+    -t harp:{{ harp_version }}
+    {{ project_root }}/harp
+  args:
+    chdir: "{{ project_root }}/harp"
+  when: harp_image_check.rc != 0
+
+
+# - name: 4.4 Verify image was built
+#   ansible.builtin.debug:
+#     msg: "Image built: {{ build_result.image }}"

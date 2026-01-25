@@ -1,0 +1,23 @@
+- name: 1.1 Create cert directory
+  ansible.builtin.file:
+    path: "{{ ssl_cert_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: 1.2 Copy privkey
+  ansible.builtin.copy:
+    src: ./certs/privkey.pem
+    dest: "{{ ssl_cert_path }}/privkey.pem"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: 1.3 Copy fullchain
+  ansible.builtin.copy:
+    src: ./certs/fullchain.pem
+    dest: "{{ ssl_cert_path }}/fullchain.pem"
+    owner: root
+    group: root
+    mode: "0644"

@@ -1,14 +1,20 @@
 # - name: Установка зависимостей для докера
 #   import_tasks: install_docker_deps.yml
 
-- name: Создание директорий
-  import_tasks: create_directories.yml
+- name: 1. Deploy certs
+  import_tasks: 1.deploy_certs.yml
 
-- name: Генерация .env
-  import_tasks: generate_env.yml
+- name: 2. Ready fs
+  import_tasks: 2.ready_fs.yml
 
-- name: Деплой контейнеров
-  import_tasks: deploy_containers.yml
+- name: 3. Generate .env
+  import_tasks: 3.generate_env.yml
 
-- name: Проверка состояния контейнеров
-  import_tasks: check_health.yml
+- name: 4. Generate harp image
+  import_tasks: 4.generate_harp_image.yml
+
+- name: 5. Deploy containers
+  import_tasks: 5.deploy_containers.yml
+
+- name: 6. Check health
+  import_tasks: 6.check_health.yml
