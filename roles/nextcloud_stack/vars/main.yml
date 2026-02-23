@@ -1,14 +1,37 @@
-db_root_password: "rootpassword123"
-db_password: "nextcloudpass"
-nextcloud_admin_user: "admin"
-nextcloud_admin_password: "adminpass"
-trusted_domains: "localhost nextcloud.dyuzha.ru"
-domain: "nextcloud.dyuzha.ru"
-
+# Images
 mariadb_image: "docker.io/library/mariadb:12.0.2"
 redis_image: "redis:8.4.0"
 nextcloud_image: "docker.io/library/nextcloud:32.0.5"
 onlyoffice_image: "onlyoffice/documentserver:9.2.1.1"
 nginx_image: "nginx:1.29.4"
-haproxy_image: "haproxy:2.9"
+haproxy_image: "haproxy:3.3.0"
+
+# Secret
+db_root_password: "rootpassword123"
+db_password: "nextcloudpass"
+nextcloud_admin_user: "admin"
+nextcloud_admin_password: "adminpass"
+jwt_secret: 1625dde2fbe5c16b73fa7b732a853fec2261b1c648dd0118eb7730d3948bccb2
+
+trusted_domains: "localhost nextcloud.dyuzha.ru"
+domain: "nextcloud.dyuzha.ru"
+
+
+# Hapr
+harp_version: "v0.3.2"
+hp_log_level: "warning"
+hp_shared_key: 123!@#qweQWE
+nc_instance_url: http://nextcloud:80
+
+# hp_trusted_proxy_ips: "172.19.0.0/16,127.0.0.1"
+# hp_frp_disable_tls: false
+# hp_spoa_address: "0.0.0.0:9600"
+# hp_spoa_address: "127.0.0.1:9600"
+
+# hp_timeout_connect: "30s"
+# hp_timeout_client: "30s"
+# hp_timeout_server: "1800s"
+
+
 project_root: /opt/nextcloud
+ssl_cert_path: "/etc/letsencrypt/live"

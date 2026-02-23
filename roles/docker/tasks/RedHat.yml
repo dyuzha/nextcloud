@@ -1,0 +1,25 @@
+---
+- name: Install required packages
+  dnf:
+    name:
+      - dnf-plugins-core    # Добавляет команду `dnf config manager`
+      - ca-certificates
+    state: present
+
+- name: Add Docker repository
+  command: >
+    dnf config-manager
+    --add-repo
+    https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    creates: /etc/yum.repos.d/docker-ce.repo
+
+- name: Install Docker packages
+  dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present

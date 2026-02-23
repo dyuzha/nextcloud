@@ -1,4 +1,9 @@
 ---
+- name: 4.0 Install git
+  ansible.builtin.package:
+    name: git
+    state: present
+
 - name: 4.1 Clone Harp repository
   ansible.builtin.git:
     repo: "https://github.com/nextcloud/HaRP.git"

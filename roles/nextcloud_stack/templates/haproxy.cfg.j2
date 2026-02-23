@@ -1,60 +1,105 @@
-# Глобальные настройки
 global
-    log stdout format raw local0
-    maxconn 4096
-    tune.ssl.default-dh-param 2048
-    ssl-default-bind-ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
-    ssl-default-bind-options no-sslv3 no-tls-tickets
+    log stdout local0 ${HP_LOG_LEVEL_HAPROXY}
+    maxconn 8192
+    ca-base /etc/ssl/certs
 
 defaults
-    mode http
     log global
     option httplog
     option dontlognull
-    timeout connect 10s
-    timeout client 60s
-    timeout server 60s
-    option forwardfor
+    timeout connect ${HP_TIMEOUT_CONNECT}
+    timeout client ${HP_TIMEOUT_CLIENT}
+    timeout server ${HP_TIMEOUT_SERVER}
 
-# -----------------------------
-# FRONTEND для Nextcloud + AppAPI
-# -----------------------------
-frontend nextcloud_front
-    bind *:80
-    bind *:443 ssl crt /etc/letsencrypt/live/{{ domain }}/fullchain.pem \
-                     crt /etc/letsencrypt/live/{{ domain }}/privkey.pem
+
+###############################################################################
+# FRONTEND: ex_apps (HTTP)
+###############################################################################
+frontend ex_apps
     mode http
+    bind ${HP_EXAPPS_ADDRESS}
 
-    # Все HTTP -> HTTPS редирект
-    redirect scheme https if !{ ssl_fc }
+    filter spoe engine exapps-spoe config /etc/haproxy/spoe-agent.conf
+    http-request silent-drop if { var(txn.exapps.bad_request) -m int eq 1 }
+    http-request return status 401 content-type text/plain string "401 Unauthorized" if { var(txn.exapps.unauthorized) -m int eq 1 }
+    http-request return status 403 content-type text/plain string "403 Forbidden" if { var(txn.exapps.forbidden) -m int eq 1 }
+    http-request return status 404 content-type text/plain string "404 Not Found" if { var(txn.exapps.not_found) -m int eq 1 }
+    use_backend %[var(txn.exapps.backend)]
 
-    # ACL для AppAPI по хосту
-    {% for app in appapi_apps %}
-    acl is_{{ app.name }} hdr(host) -i {{ app.name }}.{{ domain }}
-    use_backend {{ app.name }}_backend if is_{{ app.name }}
-    {% endfor %}
+###############################################################################
+# FRONTEND: ex_apps_https (only enabled if /certs/cert.pem exists)
+###############################################################################
+_HTTPS_FRONTEND_ frontend ex_apps_https
+_HTTPS_FRONTEND_     mode http
+_HTTPS_FRONTEND_     bind ${HP_EXAPPS_HTTPS_ADDRESS} ssl crt /certs/cert.pem
 
-    # По умолчанию Nextcloud
-    default_backend nextcloud_backend
+_HTTPS_FRONTEND_     filter spoe engine exapps-spoe config /etc/haproxy/spoe-agent.conf
+_HTTPS_FRONTEND_     http-request silent-drop if { var(txn.exapps.bad_request) -m int eq 1 }
+_HTTPS_FRONTEND_     http-request return status 401 content-type text/plain string "401 Unauthorized" if { var(txn.exapps.unauthorized) -m int eq 1 }
+_HTTPS_FRONTEND_     http-request return status 403 content-type text/plain string "403 Forbidden" if { var(txn.exapps.forbidden) -m int eq 1 }
+_HTTPS_FRONTEND_     http-request return status 404 content-type text/plain string "404 Not Found" if { var(txn.exapps.not_found) -m int eq 1 }
+_HTTPS_FRONTEND_     use_backend %[var(txn.exapps.backend)]
 
-# -----------------------------
-# BACKEND для Nextcloud
-# -----------------------------
-backend nextcloud_backend
+###############################################################################
+# BACKENDS: ex_apps & ex_apps_backend_w_bruteforce
+###############################################################################
+backend ex_apps_backend
     mode http
-    balance roundrobin
-    option httpchk GET /status.php
-    server nextcloud nextcloud:80 check inter 5s fall 3 rise 2
+    server frp_server 0.0.0.0
+    http-request set-path %[var(txn.exapps.target_path)]
+    http-request set-dst var(txn.exapps.target_ip)
+    http-request set-dst-port var(txn.exapps.target_port)
+    http-request set-header EX-APP-ID %[var(txn.exapps.exapp_id)]
+    http-request set-header EX-APP-VERSION %[var(txn.exapps.exapp_version)]
+    http-request set-header AUTHORIZATION-APP-API %[var(txn.exapps.exapp_token)]
+    http-request set-header AA-VERSION "32"  # TO-DO: temporary, remove it after we update all ExApps.
 
-# -----------------------------
-# BACKENDS для AppAPI приложений
-# -----------------------------
-{% for app in appapi_apps %}
-backend {{ app.name }}_backend
+backend ex_apps_backend_w_bruteforce
     mode http
-    balance roundrobin
-    option httpchk GET {{ app.healthcheck_path | default('/') }}
-    {% for server in app.servers %}
-    server {{ server.name }} {{ server.address }} check inter 5s fall 3 rise 2
-    {% endfor %}
-{% endfor %}
+    server frp_server 0.0.0.0
+    http-request set-path %[var(txn.exapps.target_path)]
+    http-request set-dst var(txn.exapps.target_ip)
+    http-request set-dst-port var(txn.exapps.target_port)
+    http-request set-header EX-APP-ID %[var(txn.exapps.exapp_id)]
+    http-request set-header EX-APP-VERSION %[var(txn.exapps.exapp_version)]
+    http-request set-header AUTHORIZATION-APP-API %[var(txn.exapps.exapp_token)]
+    http-request set-header AA-VERSION "32"  # TO-DO: temporary, remove it after we update all ExApps.
+    filter spoe engine exapps-bruteforce-protection-spoe config /etc/haproxy/spoe-agent.conf
+
+###############################################################################
+# BACKEND: nextcloud_control (HTTP)
+###############################################################################
+backend nextcloud_control_backend
+    mode http
+    server nextcloud_control 127.0.0.1:8200
+    http-request set-path %[var(txn.exapps.target_path)]
+
+###############################################################################
+# BACKEND: docker_engine (HTTP)
+###############################################################################
+backend docker_engine_backend
+    mode http
+    server frp_server 127.0.0.1
+    http-request set-dst-port var(txn.exapps.target_port)
+    http-request set-path %[var(txn.exapps.target_path)]
+
+    # docker system _ping
+    http-request allow if { path,url_dec -m reg -i ^(/v[\d\.]+)?/_ping$ } METH_GET
+    # docker inspect image
+    http-request allow if { path,url_dec -m reg -i ^(/v[\d\.]+)?/images/.*/json } METH_GET
+    # container inspect: GET containers/%s/json
+    http-request allow if { path,url_dec -m reg -i ^(/v[\d\.]+)?/containers/nc_app_[a-zA-Z0-9_.-]+/json } METH_GET
+    # container inspect: GET containers/%s/logs
+    http-request allow if { path,url_dec -m reg -i ^(/v[\d\.]+)?/containers/nc_app_[a-zA-Z0-9_.-]+/logs } METH_GET
+
+    # image pull: POST images/create?fromImage=%s
+    http-request allow if { path,url_dec -m reg -i ^(/v[\d\.]+)?/images/create } METH_POST
+    http-request deny
+
+
+backend agents
+    mode tcp
+    timeout connect 5s
+    timeout server  3m
+    option spop-check
+    server agent1 ${HP_SPOA_ADDRESS} check

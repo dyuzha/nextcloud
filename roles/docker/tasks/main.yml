@@ -1,0 +1,15 @@
+---
+- name: Include tasks
+  include_tasks: "{{ ansible_os_family }}.yml"
+
+- name: Активация и запуск докера
+  systemd:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Добавление пользователя в docker группу
+  user:
+    name: "{{ ansible_user | default('root') }}"
+    groups: docker
+    append: true

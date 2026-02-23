@@ -1,0 +1,160 @@
+services:
+  nextcloud-db:
+    image: ${MARIADB_IMAGE}
+    container_name: nextcloud-mariadb
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW --innodb-read-only-compressed=OFF
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+    volumes:
+      - ./mariadb:/var/lib/mysql
+    networks:
+        - nextcloud_network
+
+    # healthcheck:
+    #   test: ["CMD", "pgrep", "mysqld"]
+      # test: >
+      #   sh -c "mariadb --user=${MYSQL_USER} --password=${MYSQL_PASSWORD} \
+      #   --host=localhost -e 'SELECT 1;' ${MYSQL_DATABASE}"
+      # interval: 10s
+      # timeout: 5s
+      # retries: 5
+
+
+  nextcloud-redis:
+    image: ${REDIS_IMAGE}
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - nextcloud_network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  nextcloud:
+    image: ${NEXTCLOUD_IMAGE}
+    container_name: nextcloud-app
+    restart: unless-stopped
+    environment:
+      - NEXTCLOUD_TRUSTED_DOMAINS=${TRUSTED_DOMAINS}
+      - MYSQL_HOST=nextcloud-db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=nextcloud-redis
+      - NEXTCLOUD_ADMIN_USER=${ADMIN_USER}
+      - NEXTCLOUD_ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - OVERWRITEPROTOCOL=https
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES}
+    volumes:
+      - ./nextcloud/html:/var/www/html
+      - ./nextcloud/data:/var/www/html/data
+      - ./nextcloud/config:/var/www/html/config
+
+    depends_on:
+      nextcloud-redis:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/status.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+    networks:
+      - nextcloud_network
+
+
+  onlyoffice:
+    image: ${ONLYOFFICE_IMAGE}
+    container_name: onlyoffice-documentserver
+    restart: unless-stopped
+    # ports:
+    #   - "8081:80"
+    #   - "1233:443"
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./onlyoffice/logs:/var/log/onlyoffice
+      - ./onlyoffice/data:/var/www/onlyoffice/Data
+      - ./onlyoffice/lib:/var/lib/onlyoffice
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+    networks:
+      -  nextcloud_network
+
+
+  nginx:
+    image: ${NGINX_IMAGE}
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"    # HTTP для редиректа на HTTPS
+      - "443:443"  # Основной HTTPS-порт
+    volumes:
+      # Конфигурационные файлы Nginx
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt/live:/etc/letsencrypt/live:ro
+      # Статичные файлы для HTTP challenge (для получения сертификатов)
+      - ./nginx/html:/usr/share/nginx/html:ro
+    environment:
+      - DOMAIN=${DOMAIN}
+    depends_on:
+      nextcloud:
+        condition: service_healthy
+      onlyoffice:
+        condition: service_healthy
+    networks:
+      - nextcloud_network
+
+services:
+  harp:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: nextcloud-harp
+    restart: unless-stopped
+
+    environment:
+      HP_SHARED_KEY: "${HP_SHARED_KEY}"
+
+      # Где слушает HaRP
+      HP_EXAPPS_ADDRESS: "${HP_EXAPPS_ADDRESS:-0.0.0.0:8780}"
+      HP_EXAPPS_HTTPS_ADDRESS: "${HP_EXAPPS_HTTPS_ADDRESS:-}"
+      HP_FRP_ADDRESS: "${HP_FRP_ADDRESS:-0.0.0.0:8782}"
+
+      # Адрес Nextcloud (внутренний!)
+      NC_INSTANCE_URL: "${NC_INSTANCE_URL:-http://nextcloud-app}"
+      # Сеть докера
+      HP_TRUSTED_PROXY_IPS: "${HP_TRUSTED_PROXY_IPS:-172.18.0.0/16}"
+      HP_LOG_LEVEL: "${HP_LOG_LEVEL:-info}"
+
+    ports:
+      - "8780:8780"
+      - "8781:8781"
+      - "8782:8782"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - nextcloud_nextcloud_network
+
+
+networks:
+  nextcloud_network:
+    driver: bridge
