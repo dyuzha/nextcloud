@@ -1,0 +1,68 @@
+---
+- name: "🚀 GLPI"
+  hosts: glpi
+  become: true
+  gather_facts: true
+
+  roles:
+    - glpi
+
+  tasks:
+    - name: "1. Установка необходимых пакетов"
+      apt:
+        name:
+          - docker.io
+          - docker-compose-plugin
+          - python3-pip
+          - python3-docker
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: "2. Запуск Docker сервиса"
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: "3. Создание директории для GLPI"
+      file:
+        path: /opt/glpi
+        state: directory
+        mode: '0755'
+
+    - name: "4. Копирование docker-compose.yml из шаблона"
+      template:
+        src: ../files/docker-compose.yml.j2
+        dest: /opt/glpi/docker-compose.yml
+        mode: '0644'
+
+    - name: "5. Копирование .env файла из шаблона"
+      template:
+        src: ../files/.env.j2
+        dest: /opt/glpi/.env
+        mode: '0600'
+
+    - name: "6. Запуск контейнеров"
+      community.docker.docker_compose_v2:
+        project_src: /opt/glpi
+        state: present
+        pull: always
+        remove_orphans: yes
+      register: compose_output
+
+    - name: "7. Ожидание инициализации GLPI (через CLI)"
+      ansible.builtin.command:
+        cmd: docker exec glpi-glpi-1 php bin/console system:status --format json
+      register: glpi_status
+      retries: 12
+      delay: 10
+      until: glpi_status.rc == 0
+      ignore_errors: yes
+
+    - name: "8. Вывод информации о развёртывании"
+      debug:
+        msg:
+          - "✅ GLPI успешно развёрнут!"
+          - "🌐 Адрес: http://{{ ansible_default_ipv4.address }}"
+          - "🔑 Логин по умолчанию: glpi / glpi"
