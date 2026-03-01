@@ -1,0 +1,4 @@
+domains:
+  - dyuzha.ru
+  - www.dyuzha.ru
+nginx_container_name: nginx

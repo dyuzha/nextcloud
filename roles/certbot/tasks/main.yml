@@ -1,0 +1,59 @@
+- name: Устанавливаем Certbot (Debian)
+  apt:
+    name: certbot
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Устанавливаем Certbot (RedHat)
+  dnf:
+    name:
+      - epel-release
+      - certbot
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Создаём директорию для ACME challenge
+  file:
+    path: /var/www/certbot
+    state: directory
+    owner: nginx
+    group: nginx
+    mode: '0755'
+
+
+- name: Получаем сертификаты Let's Encrypt через webroot
+  command: >
+    certbot certonly
+    --non-interactive
+    --agree-tos
+    --register-unsafely-without-email
+    --webroot
+    -w /var/www/certbot
+    --server https://acme-v02.api.letsencrypt.org/directory
+    {% for d in domains %}
+    -d {{ d }}
+    {% endfor %}
+  args:
+    creates: "/etc/letsencrypt/live/{{ domains[0] }}/fullchain.pem"
+
+
+# https://acme-v02.api.letsencrypt.org/directory (см. в браузуре)
+# directory — это не “папка”, а точка входа ACME API.
+# Let’s Encrypt работает по протоколу ACME (RFC 8555).
+# Когда Certbot подключается к серверу, он сначала обращается к специальному endpoint /directory, чтобы узнать:
+# куда отправлять запрос на регистрацию аккаунта
+# куда отправлять заказ сертификата (newOrder)
+# где подтверждать challenge
+# где отзывать сертификат
+# какие возможности поддерживаются
+
+
+
+# - name: Создаём cron job для автообновления сертификата
+#   cron:
+#     name: "Renew Let's Encrypt certificates"
+#     job: "certbot renew --quiet --post-hook 'docker kill -s HUP {{ nginx_container_name }}'"
+#     minute: "0"
+#     hour: "3"
+

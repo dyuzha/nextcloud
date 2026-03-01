@@ -1,0 +1,9 @@
+---
+- name: Автообновление сертификатов через CertBot
+  hosts: certs
+  become: true
+  roles:
+    - certbot
+
+  vars_files:
+    - vars.yml
