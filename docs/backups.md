@@ -1,4 +1,20 @@
 
+# Бекапирование
+---
+
+## Volumes
+---
+```bash
+# Посмотреть volumes
+docker volumes ls
+/var/docker/volumes
+```
+
+Лежат volumes по адресу `/var/docker/volumes`.
+Зайти в нутрь можно только от пользователя root.
+В CloudInit root не доступен.
+
+
 ```bash
 #!/bin/bash
 BACKUP_DIR=~/glpi-backups
@@ -11,7 +27,6 @@ mkdir -p $BACKUP_DIR
 
 # Бэкап базы
 docker run --rm \
-  --network glpi_default \
   -v $BACKUP_DIR:/backup \
   -e MYSQL_PWD=$GLPI_DB_PASSWORD \
   mysql:latest \

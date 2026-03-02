@@ -1,0 +1,5 @@
+domains:
+  - "test.it4prof.ru"
+  - "www.test.it4prof.ru"
+certbot_auto_renew: false
+ansible_user: profit

@@ -1,3 +1,4 @@
+# Установка
 - name: Устанавливаем Certbot (Debian)
   apt:
     name: certbot
@@ -5,23 +6,18 @@
     update_cache: yes
   when: ansible_os_family == "Debian"
 
-- name: Устанавливаем Certbot (RedHat)
-  dnf:
-    name:
-      - epel-release
-      - certbot
-    state: present
-  when: ansible_os_family == "RedHat"
 
-- name: Создаём директорию для ACME challenge
-  file:
-    path: /var/www/certbot
+# Настройка webroot
+- name: Create webroot directory
+  ansible.builtin.file:
+    path: "{{ certbot_webroot_path }}"
     state: directory
-    owner: nginx
-    group: nginx
-    mode: '0755'
+    owner: root
+    group: root
+    mode: "0755"
 
 
+  # Получение сертифифката
 - name: Получаем сертификаты Let's Encrypt через webroot
   command: >
     certbot certonly
@@ -36,6 +32,15 @@
     {% endfor %}
   args:
     creates: "/etc/letsencrypt/live/{{ domains[0] }}/fullchain.pem"
+  notify: reload nginx
+
+# - name: Setup auto-renew cron
+#   ansible.builtin.cron:
+#     name: "certbot renew"
+#     job: "certbot renew --quiet && systemctl reload nginx"
+#     minute: "0"
+#     hour: "3"
+#   when: certbot_auto_renew
 
 
 # https://acme-v02.api.letsencrypt.org/directory (см. в браузуре)
@@ -56,4 +61,17 @@
 #     job: "certbot renew --quiet --post-hook 'docker kill -s HUP {{ nginx_container_name }}'"
 #     minute: "0"
 #     hour: "3"
+
+
+# - name: Install EPEL (RedHat)
+#   ansible.builtin.yum:
+#     name: epel-release
+#     state: present
+#   when: ansible_os_family == "RedHat"
+#
+# - name: Install certbot (RedHat)
+#   ansible.builtin.yum:
+#     name: certbot
+#     state: present
+#   when: ansible_os_family == "RedHat"
 

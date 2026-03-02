@@ -1,41 +1,39 @@
 - name: "1. Создание директории для GLPI"
   file:
-    path: /opt/docker/glpi
+    path: "{{ project_root }}"
     state: directory
     mode: '0755'
+    # recurse: yes  # Создаст все родительские директории, если их нет
 
-- name: "2. Копирование docker-compose.yml из шаблона"
-  template:
-    src: ../files/docker-compose.yml.j2
-    dest: /opt/glpi/docker-compose.yml
-    mode: '0644'
+- name: 2. Copy docker-compose.yml
+  ansible.builtin.copy:
+    src: docker-compose.yml
+    dest: "{{ project_root }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
 
-- name: "5. Копирование .env файла из шаблона"
+- name: "3. Копирование .env файла из шаблона"
   template:
-    src: ../files/.env.j2
-    dest: /opt/glpi/.env
+    src: ../templates/.env.j2
+    dest: "{{ project_root }}/.env"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: '0600'
 
-- name: "6. Запуск контейнеров"
+- name: "4. Запуск контейнеров"
   community.docker.docker_compose_v2:
-    project_src: /opt/glpi
+    env_files:
+      - "{{project_root }}/.env"
+    project_src: "{{ project_root }}"
+    pull: missing
     state: present
-    pull: always
-    remove_orphans: yes
-  register: compose_output
 
-- name: "7. Ожидание инициализации GLPI (через CLI)"
-  ansible.builtin.command:
-    cmd: docker exec glpi-glpi-1 php bin/console system:status --format json
-  register: glpi_status
-  retries: 12
-  delay: 10
-  until: glpi_status.rc == 0
-  ignore_errors: yes
+# - name: "5. Проверка GLPI"
 
-- name: "8. Вывод информации о развёртывании"
+- name: "6. Вывод информации о развёртывании"
   debug:
     msg:
       - "✅ GLPI успешно развёрнут!"
       - "🌐 Адрес: http://{{ ansible_default_ipv4.address }}"
-      - "🔑 Логин по умолчанию: glpi / glpi"
+      # - "🔑 Логин по умолчанию: glpi / glpi"

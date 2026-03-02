@@ -1,0 +1,10 @@
+---
+- name: "💾 Управление бэкапами"
+  hosts: backups_support
+  become: yes
+  vars:
+    backup_action: "{{ backup_action }}"    # create, restore
+    backup_path: "{{ backup_path }}"        # путь до директории с backup на хосте
+    backup_volumes: "{{ backup_volumes }}"  # список volumes
+  roles:
+    - backup_volumes

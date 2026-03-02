@@ -1,0 +1,11 @@
+- hosts: prof-site
+  become: true
+
+  vars_files:
+    - prod-vars/prof-site.yml
+
+
+  roles:
+    # - docker
+    - nginx
+    - certbot

@@ -1,0 +1,4 @@
+server_name: "test.it4prof.ru"
+nginx_ssl_cert: "/etc/letsencrypt/live/test.it4prof.ru/fullchain.pem"
+nginx_ssl_key: "/etc/letsencrypt/live/test.it4prof.ru/privkey.pem"
+proxy_trg: "http://127.0.0.1:3000"

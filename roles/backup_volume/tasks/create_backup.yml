@@ -1,0 +1,51 @@
+- name: "📦 Бэкап Docker томов"
+  become: yes
+
+  tasks:
+    - name: "📁 Проверить директорию для бэкапов"
+      ansible.builtin.stat:
+        path: "{{ backup_path }}"
+      register: backup_dir_check
+
+    - name: "Убедиться, что директория существует и доступна для записи"
+      ansible.builtin.assert:
+        that:
+          - directory_check.stat.exists
+          - directory_check.stat.isdir
+          - directory_check.stat.writeable
+        fail_msg: |
+          Директория '{{ target_directory }}' либо не существует, либо не является директорией,
+          либо у пользователя '{{ ansible_user | default(ansible_user_id) }}' нет прав на запись.
+          Текущие права: {{ directory_check.stat.mode | default('N/A') }}
+          Владелец: {{ directory_check.stat.pw_name | default('N/A') }}:{{ directory_check.stat.gr_name | default('N/A') }}
+        success_msg: "Директория '{{ target_directory }}' существует и доступна для записи"
+
+
+    - name: "Бэкап тома"
+
+      # Создание docker container
+      docker_container:
+        name: backup-{{ volume_name }}
+        image: alpine
+
+      # Монтирование volumes
+      # Тут надо как-то раскарыть backup_volumes (так как там список)
+        volumes:
+          - "{{ backup_volumes }}:/data:ro" # Volume для бекапа
+          - "{{ backup_path }}:/backup" # Директория где будет храниться бекап
+
+        # Выполнить команду бекапирования (tar архивация + zip сжатие) на хост
+        command: tar czf /backup/{{ volume_name }}_{{ ansible_date_time.date }}.tar.gz -C /data .
+        cleanup: yes # Контейнер удалится после завершения команды
+        detach: no
+
+    - name: "📊 Показать результаты бэкапа"
+      ansible.builtin.debug:
+        msg:
+          - "📦 Том: {{ item.item }}"
+          - "📁 Размер: {{ item.container.Output | regex_search('([0-9.]+[KMG]?)', multiline=True) | last | default('N/A') }}"
+          - "📝 Статус: {{ '✅ Успешно' if item is success else '❌ Ошибка' }}"
+      loop: "{{ backup_results.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: backup_results.results is defined

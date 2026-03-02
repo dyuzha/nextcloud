@@ -1,4 +1,5 @@
-domains:
-  - dyuzha.ru
-  - www.dyuzha.ru
-nginx_container_name: nginx
+# domains:
+#   - "test.it4prof.ru"
+#   - "www.test.it4prof.ru"
+certbot_webroot_path: /var/www/certbot
+certbot_auto_renew: false

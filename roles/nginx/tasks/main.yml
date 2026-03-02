@@ -1,0 +1,26 @@
+---
+- name: Update apt cache (Debian)
+  ansible.builtin.apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Install nginx (Debian)
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Deploy nginx config
+  ansible.builtin.template:
+    src: main.conf.j2
+    dest: /etc/nginx/conf.d/main.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart nginx
+
+- name: Ensure nginx is enabled and started
+  ansible.builtin.service:
+    name: "nginx"
+    state: started
+    enabled: yes

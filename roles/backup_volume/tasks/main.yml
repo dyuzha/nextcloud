@@ -1,0 +1,7 @@
+- name: "💾 Создание бэкапа"
+  include_tasks: "tasks/create_backup.yml"
+  when: backup_action == "create"
+
+- name: "🔄 Восстановление из бэкапа"
+  include_tasks: "tasks/restore_backup.yml"
+  when: backup_action == "restore"

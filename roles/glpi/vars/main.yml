@@ -1,0 +1,5 @@
+glpi_db_name: "glpi"
+glpi_db_user: "glpi"
+glpi_db_password: "glpi"
+
+project_root: "/opt/docker/glpi"

@@ -1,0 +1,35 @@
+- name: "📦 Бэкап Docker томов"
+  hosts:
+  become: yes
+
+  vars:
+    backup_dir: "/opt/backups/glpi"
+    volumes_to_backup:
+
+
+  tasks:
+    - name: "1. Создание директории для бэкапов"
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: "Бэкап тома"
+      # Создание docker container
+      docker_container:
+        name: backup-{{ volume_name }}
+        image: alpine
+
+      # Монтирование volumes
+        volumes:
+          - "{{ volume_name }}:/data:ro" # Volume для бекапа
+          - "{{ backup_dir }}:/backup" # Директория где будет храниться бекап
+
+        # Выполнить команду бекапирования (tar архивация + zip сжатие) на хост
+        command: tar czf /backup/{{ volume_name }}_{{ ansible_date_time.date }}.tar.gz -C /data .
+        cleanup: yes # Контейнер удалится после завершения команды
+        detach: no
+      vars:
+        volume_name: "glpi_data"
