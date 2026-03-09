@@ -1,0 +1,21 @@
+# Внешний URL
+url_outline
+
+# Количество процессов
+count processors=1
+
+# Сгенерировать и вставить (разные)
+generate_hex_secret_key
+generate_hex_utils_key
+
+postgres_url
+redis_url
+
+connection_min_pool
+connection_max_pool
+
+# Корневая папка каталогов
+file_root_dir=
+
+# Максимальный размер вложений
+file_storage_upload_max_size=262144000

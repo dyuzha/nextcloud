@@ -1,6 +1,6 @@
 ---
 - name: Install and configure nginx
   become: yes
-  hosts: nginx
+  hosts: reverse-proxy
   roles:
     - nginx

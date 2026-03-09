@@ -1,4 +1,0 @@
-domains:
-  - example.com
-  - www.example.com
-nginx_container_name: nginx

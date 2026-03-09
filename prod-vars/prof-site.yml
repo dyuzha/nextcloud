@@ -1,5 +1,19 @@
-domains:
-  - "test.it4prof.ru"
-  - "www.test.it4prof.ru"
-certbot_auto_renew: false
-ansible_user: profit
+ansible_user: ...
+
+# --- git-docker-deploy ---- #
+project_root: /opt/docker/me-site
+# path_ssh_privat_key_src:
+# path_ssh_privat_key_trg:
+git_url_repo: ...
+version: main
+
+
+# --- nginx ---- #
+nginx_sites:
+  - domain: test.it4prof.ru
+    proxy: http://192.168.88.68:3000
+  - domain: www.test.it4prof.ru
+    proxy: http://192.168.88.68:3000
+
+cert_dir:
+  test.it4prof.ru

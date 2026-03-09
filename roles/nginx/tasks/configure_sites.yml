@@ -1,0 +1,27 @@
+---
+- name: Deploy HTTPS configs
+  ansible.builtin.template:
+    src: site_https.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.domain }}.https.conf"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user }}"
+    mode: "0644"
+  loop: "{{ nginx_sites }}"
+
+
+- name: "Enable sites"
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ item.domain }}.https.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.domain }}.https.conf"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user }}"
+    mode: "0644"
+    state: link
+  loop: "{{ nginx_sites }}"
+  notify: reload nginx
+
+- name: Ensure nginx is started and enabled
+  ansible.builtin.service:
+    name: "nginx"
+    state: started
+    enabled: yes

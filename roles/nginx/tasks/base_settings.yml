@@ -1,0 +1,35 @@
+- name: Install packages
+  ansible.builtin.package:
+    name:
+      - nginx
+      -  "{{ 'cron' if ansible_os_family == 'Debian' else 'cronie' }}"
+    state: present
+
+- name: Setup default proxy configuration
+  ansible.builtin.copy:
+    src: proxy.conf
+    dest: /etc/nginx/conf.d/proxy.conf
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user }}"
+    mode: "0644"
+  notify: reload nginx
+
+- name: Deploy HTTP configs
+  ansible.builtin.template:
+    src: site_http.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.domain }}.http.conf"
+  loop: "{{ nginx_sites }}"
+
+- name: Enable sites
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ item.domain }}.http.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.domain }}.http.conf"
+    state: link
+  loop: "{{ nginx_sites }}"
+  notify: reload nginx
+
+- name: Ensure nginx is started and enabled
+  ansible.builtin.service:
+    name: "nginx"
+    state: started
+    enabled: yes

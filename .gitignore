@@ -2,4 +2,7 @@
 *secrets
 *certs/
 */vars/main.yml
-inventory/*
+inventory
+gitlab_runner
+geerlingguy.certbot
+me-site.yml

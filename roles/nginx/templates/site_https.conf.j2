@@ -1,0 +1,16 @@
+
+server {
+    listen 443 ssl;
+    http2 on;
+
+    server_name {{ item.domain }};
+
+    ssl_certificate /etc/letsencrypt/live/{{ cert_dir }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ cert_dir }}/privkey.pem;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    location / {
+        proxy_pass {{ item.proxy }};
+    }
+}

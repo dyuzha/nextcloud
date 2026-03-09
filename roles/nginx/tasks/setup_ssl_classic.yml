@@ -1,0 +1,35 @@
+- name: Install certbot
+  ansible.builtin.package:
+    name: certbot
+    state: present
+
+- name: Create webroot
+  ansible.builtin.file:
+    path: /var/www/certbot
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user }}"
+    mode: "0755"
+    state: directory
+
+- name: Generate certificates
+  ansible.builtin.command: >
+    certbot certonly
+    --webroot
+    -w /var/www/certbot
+    -d {{ item.domain }}
+    --agree-tos
+    --non-interactive
+    --register-unsafely-without-email
+
+
+
+    {% if certbot_email %}
+    --email {{ certbot_email }}
+    {% else %}
+    --register-unsafely-without-email
+    {% endif %}
+
+  args:
+    creates: "/etc/letsencrypt/live/{{ item.domain }}"
+  loop: "{{ nginx_sites }}"
+  notify: reload nginx

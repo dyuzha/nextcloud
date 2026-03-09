@@ -1,26 +1,15 @@
 ---
-- name: Update apt cache (Debian)
-  ansible.builtin.apt:
-    update_cache: yes
-  when: ansible_os_family == "Debian"
+- name: Set OS-specific variables
+  ansible.builtin.set_fact:
+    nginx_user: "{{ 'www-data' if ansible_os_family == 'Debian' else 'nginx' }}"
+    nginx_group: "{{ 'www-data' if ansible_os_family == 'Debian' else 'nginx' }}"
 
-- name: Install nginx (Debian)
-  ansible.builtin.apt:
-    name: nginx
-    state: present
-  when: ansible_os_family == "Debian"
+- name: Setup Base settings
+  ansible.builtin.include_tasks: base_settings.yml
 
-- name: Deploy nginx config
-  ansible.builtin.template:
-    src: main.conf.j2
-    dest: /etc/nginx/conf.d/main.conf
-    owner: root
-    group: root
-    mode: "0644"
-  notify: restart nginx
+- name: Setup SSL certificate
+  ansible.builtin.include_tasks: setup_ssl.yml
+  when: certbot_enabled | default(true)
 
-- name: Ensure nginx is enabled and started
-  ansible.builtin.service:
-    name: "nginx"
-    state: started
-    enabled: yes
+- name: Configure HTTPS sites
+  ansible.builtin.include_tasks: configure_sites.yml

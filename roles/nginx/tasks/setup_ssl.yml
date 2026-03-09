@@ -1,0 +1,20 @@
+---
+- name: Install and configure certbot
+  include_role:
+    name: geerlingguy.certbot
+  vars:
+    webroot: "/var/www/html"
+    certbot_create_if_missing: true
+    certbot_create_method: webroot
+    certbot_register_unsafely_without_email: true
+    certbot_admin_email: "matvey10d@gmail.com"
+    certbot_certs:
+      - domains: "{{ nginx_sites | map(attribute='domain') | list }}"
+        webroot: "/var/www/html"
+    certbot_auto_renew: true
+    certbot_auto_renew_hour: "3"
+    certbot_auto_renew_minute: "30"
+
+
+  # Установить в папку roles вашего проекта
+  # ansible-galaxy install geerlingguy.certbot -p ./roles
