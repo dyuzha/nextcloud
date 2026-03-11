@@ -3,32 +3,20 @@
     path: "{{ project_root }}"
     state: directory
     mode: '0755'
-    # recurse: yes  # Создаст все родительские директории, если их нет
 
 
-# - name: Убедиться, что SSH-ключ установлен
-#   ansible.builtin.copy:
-#     src: {{ path_ssh_privat_key_src }}
-#     dest: {{ path_ssh_privat_key_trg }}
-#     mode: 0600
-
-
-# - name: Клонировать приватный репозиторий через SSH
-#   ansible.builtin.git:
-#     repo: {{ git_url_repo }}
-#     dest: {{ project_root }}
-#     version: {{ version }}
-#     key_file: {{ path_ssh_privat_key_trg }}
-#     accept_hostkey: yes
-#     update: yes
-
-
-- name: Клонировать публичный репозиторий
+- name: Клонировать репозиторий с токеном в URL
   ansible.builtin.git:
-    repo: "{{ git_url_repo }}"
+    repo: "https://{{ gitflic_username }}:{{ gitflic_token }}@gitflic.ru/{{ git_url_ending }}"
     dest: "{{ project_root }}"
     version: "{{ version }}"
-    update: yes
+
+# - name: Клонировать публичный репозиторий
+#   ansible.builtin.git:
+#     repo: "{{ git_url_repo }}"
+#     dest: "{{ project_root }}"
+#     version: "{{ version }}"
+#     update: yes
 
 
 - name: Копирование .env файла из шаблона
@@ -56,3 +44,5 @@
       - ✅ Проект успешно развёрнут!
       - "🌐 Адрес: http://{{ ansible_default_ipv4.address }}"
       # - "🔑 Логин по умолчанию: glpi / glpi"
+
+

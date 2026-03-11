@@ -7,6 +7,9 @@
 - name: Setup Base settings
   ansible.builtin.include_tasks: base_settings.yml
 
+- name: Setup UFW
+  ansible.builtin.include_tasks: setup_ufw.yml
+
 - name: Setup SSL certificate
   ansible.builtin.include_tasks: setup_ssl.yml
   when: certbot_enabled | default(true)

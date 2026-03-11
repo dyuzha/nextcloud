@@ -14,6 +14,11 @@
     mode: "0644"
   notify: reload nginx
 
+- name: Remove symlink default in sites-enabled
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
 - name: Deploy HTTP configs
   ansible.builtin.template:
     src: site_http.conf.j2

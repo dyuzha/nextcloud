@@ -1,0 +1,10 @@
+- hosts: prof_site_test
+  become: true
+
+  vars_files:
+    - ../group_vars/prof_site_test.yml  # или полный путь
+
+  roles:
+    - nginx
+    - docker
+    - git_docker_deploy
